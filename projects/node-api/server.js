@@ -5,8 +5,9 @@ const swaggerJsdoc = require('swagger-jsdoc');
 const app = express();
 const port = 8080;
 const prisma = new PrismaClient();
-
+const cors = require('cors')
 app.use(express.json());
+app.use(cors());
 
 // Swagger setup
 const swaggerOptions = {
@@ -30,12 +31,14 @@ const swaggerOptions = {
 const swaggerDocs = swaggerJsdoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
+
+
 // CREATE
 /**
  * @swagger
- * /gateway:
+ * /nodered:
  *   post:
- *     summary: Cria um novo registro de gateway PLC
+ *     summary: Create a new data from PLC
  *     tags: [Gateway]
  *     requestBody:
  *       required: true
@@ -60,25 +63,72 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Gateway'
+ *               $ref: '#/components/schemas/Gateway' 
  *       400:
  *         description: Erro na requisição
  */
+
+
+// sincronismo do node red
+app.post('/nodered', (req, res) => {
+  try {
+    const { gatewayID, state } = req.body;
+    console.log(gatewayID);
+    console.log(state);
+    res.json(plcData);
+  } catch (error) {
+    res.json({ error: error.message });
+  }
+});
+// CREATE
+/**
+ * @swagger
+ * /gateway:
+ *   post:
+ *     summary: Create a new data from PLC
+ *     tags: [Gateway]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               gatewayID:
+ *                 type: string
+ *               state:
+ *                 type: string
+ *             required:
+ *               - gatewayID
+ *               - state
+ *             example:
+ *               gatewayID: "PLC-001"
+ *               state: "online"
+ *     responses:
+ *       201:
+ *         description: Registro criado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Gateway' 
+ *       400:
+ *         description: Erro na requisição
+ */
+
 app.post('/gateway', async (req, res) => {
   try {
     const { gatewayID, state } = req.body;
 
     if (!gatewayID || !state) {
-      return res.status(400).json({ error: 'gatewayID e state são obrigatórios' });
+      return res.status(400).json({ error: 'gatewayID is mandatory' });
     }
 
-    const plcData = await prisma.plc_data.create({
+    const plcData =  await prisma.plc_data.create({
       data: {
         gateway_id: gatewayID,
         data: state,
       },
     });
-
     res.status(201).json(plcData);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -90,11 +140,11 @@ app.post('/gateway', async (req, res) => {
  * @swagger
  * /gateway:
  *   get:
- *     summary: Lista todos os registros de gateway
+ *     summary: Read data from PLC
  *     tags: [Gateway]
  *     responses:
  *       200:
- *         description: Lista de registros
+ *         description: read data
  *         content:
  *           application/json:
  *             schema:
@@ -118,7 +168,7 @@ app.get('/gateway', async (req, res) => {
  * @swagger
  * /gateway/{id}:
  *   get:
- *     summary: Obtém um registro específico por ID
+ *     summary: Get data by ID
  *     tags: [Gateway]
  *     parameters:
  *       - in: path
@@ -160,7 +210,7 @@ app.get('/gateway/:id', async (req, res) => {
  * @swagger
  * /gateway/{id}:
  *   put:
- *     summary: Atualiza um registro existente
+ *     summary: Update data by ID
  *     tags: [Gateway]
  *     parameters:
  *       - in: path
@@ -218,7 +268,7 @@ app.put('/gateway/:id', async (req, res) => {
  * @swagger
  * /gateway/{id}:
  *   delete:
- *     summary: Deleta um registro existente
+ *     summary: Remove data
  *     tags: [Gateway]
  *     parameters:
  *       - in: path
